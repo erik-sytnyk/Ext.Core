@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/10/nuspec.xsd">
+    <metadata>
+        <id>Ext.Core</id>
+        <version>$version$</version>
+        <title>Ext.Core</title>
+        <authors>Yegor Sytnyk</authors>
+        <requireLicenseAcceptance>false</requireLicenseAcceptance>
+        <description>Useful extensions and utility methods for C#.</description>
+        <copyright />
+    </metadata>
+</package>
