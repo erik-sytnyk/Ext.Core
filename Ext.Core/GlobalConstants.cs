@@ -14,7 +14,7 @@ namespace Ext.Core
             public const string DoubleQuote = "\"";
             public const string Backslash = "\\";
             public const string Slash = "/";
-            public const string Tab = "/t";
+            public const string Tab = "\t";
             public const string NewLine = "\r\n";
         }
     }
