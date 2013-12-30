@@ -41,6 +41,8 @@
   <ItemGroup>
     <Compile Include="Check.cs" />
     <Compile Include="Collections\DictionaryExtensions.cs" />
+    <Compile Include="GlobalConstants.cs" />
+    <Compile Include="Converting\ConvertExtensions.cs" />
     <Compile Include="Enums\EnumHelper.cs" />
     <Compile Include="Enums\EnumItemAttribute.cs" />
     <Compile Include="Mapping\IMappingConverter.cs" />
