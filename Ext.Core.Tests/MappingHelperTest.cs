@@ -64,6 +64,16 @@ namespace Ext.Core.Tests
             public string Text { get; set; }
         }
 
+        public class SourceWithDict
+        {
+            public Dictionary<int, string> Dictionary { get; set; }
+        }
+
+        public class TargetWithDict
+        {
+            public Dictionary<int, string> Dictionary { get; set; }
+        }
+
         [TestMethod]
         public void should_map_with_cloning()
         {
@@ -111,6 +121,23 @@ namespace Ext.Core.Tests
 
             Assert.AreEqual(destination.Number, 12);
             Assert.AreEqual(destination.Text, source.Text);
+        }
+
+        [TestMethod]
+        public void should_work_with_dictionaries()
+        {
+            var sourse = new SourceWithDict();
+            sourse.Dictionary = new Dictionary<int, string>();
+
+            sourse.Dictionary.Add(1, "One");
+            sourse.Dictionary.Add(2, "Two");
+            sourse.Dictionary.Add(3, "Threee");
+
+            var target = new TargetWithDict();
+
+            MappingHelper.Map(sourse, target);
+
+            Assert.AreSame(sourse.Dictionary[2], target.Dictionary[2]);
         }
     }
 }

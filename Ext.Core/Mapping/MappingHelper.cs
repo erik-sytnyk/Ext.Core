@@ -82,6 +82,8 @@ namespace Ext.Core.Mapping
                 var sourcePropValue = sourceProperty.GetValue(source);
                 var sourcePropType = sourceProperty.PropertyType;
 
+                Dictionary<string, int> dic = new Dictionary<string, int>();
+
                 if (targetProperty != null && sourcePropValue != null)
                 {
                     var trargetPropValue = targetProperty.GetValue(target);
@@ -154,7 +156,7 @@ namespace Ext.Core.Mapping
 
         protected bool IsClonableType(Type type)
         {
-            if (type.IsValueType || type == typeof(string))
+            if (type.IsValueType || type == typeof(string) || type.Implements<IEnumerable>())
             {
                 return false;
             }
