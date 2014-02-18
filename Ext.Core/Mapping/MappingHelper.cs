@@ -72,12 +72,12 @@ namespace Ext.Core.Mapping
                 return;
             }
 
-            var props = MappingCache.GetWritableProperties(source).ToList();
+            var props = MappingCache.GetProperties(source).ToList();
 
             foreach (var sourceProperty in props)
             {
                 PropertyInfo property = sourceProperty;
-                var targetProperty = MappingCache.GetProperties(target).FirstOrDefault(x => x.Name == property.Name);
+                var targetProperty = MappingCache.GetWritableProperties(target).FirstOrDefault(x => x.Name == property.Name);
 
                 var sourcePropValue = sourceProperty.GetValue(source);
                 var sourcePropType = sourceProperty.PropertyType;
