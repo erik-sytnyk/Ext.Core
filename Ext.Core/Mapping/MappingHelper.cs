@@ -67,6 +67,8 @@ namespace Ext.Core.Mapping
 
         public void MapObject(object source, object target)
         {
+            Check.NotNull(target, "Target property for mapping should not be null");
+
             if (source == null)
             {
                 return;
@@ -86,7 +88,7 @@ namespace Ext.Core.Mapping
 
                 if (targetProperty != null && sourcePropValue != null)
                 {
-                    var trargetPropValue = targetProperty.GetValue(target);
+                    var targetPropValue = targetProperty.GetValue(target);
                     var targetPropType = targetProperty.PropertyType;
 
                     var converter =
@@ -102,16 +104,16 @@ namespace Ext.Core.Mapping
                     } 
                     else if (sourcePropType.Implements<IEnumerable>() && this.IsCollectionT(targetPropType) && targetPropType.Implements<IList>())
                     {
-                        if (trargetPropValue == null && targetPropType.HasParameterlessConstructor())
+                        if (targetPropValue == null && targetPropType.HasParameterlessConstructor())
                         {
-                            trargetPropValue = Activator.CreateInstance(targetPropType);
+                            targetPropValue = Activator.CreateInstance(targetPropType);
                         }
 
                         var targetItemType = this.GetCollectionTElementType(targetPropType);
                         if (targetItemType.HasParameterlessConstructor())
                         {
                             var sourceList = sourcePropValue as IEnumerable;
-                            var targetList = trargetPropValue as IList;
+                            var targetList = targetPropValue as IList;
 
                             foreach (var sourceItem in sourceList)
                             {
@@ -125,13 +127,16 @@ namespace Ext.Core.Mapping
                     }
                     else if (this.IsClonableType(targetPropType))
                     {
-                        if (trargetPropValue == null && targetPropType.HasParameterlessConstructor())
+                        if (targetPropValue == null && targetPropType.HasParameterlessConstructor())
                         {
-                            trargetPropValue = Activator.CreateInstance(targetPropType);
-                            targetProperty.SetValue(target, trargetPropValue);
+                            targetPropValue = Activator.CreateInstance(targetPropType);
+                            targetProperty.SetValue(target, targetPropValue);
                         }
 
-                        this.MapObject(sourcePropValue, trargetPropValue);
+                        if (targetPropValue != null)
+                        {
+                            this.MapObject(sourcePropValue, targetPropValue);
+                        }
                     }
                     else if (targetPropType == sourcePropType) //simple type
                     {
