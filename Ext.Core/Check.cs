@@ -31,5 +31,10 @@ namespace Ext.Core
         {
             Check.That(obj != null, message);
         }
+
+        public static void NotNull(object obj)
+        {
+            NotNull(obj, "Value must not be null");
+        }
     }
 }
