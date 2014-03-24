@@ -13,7 +13,7 @@ namespace Ext.Core.Tests
         [TestMethod]
         public void should_call_string_format_from_string_instance()
         {
-            var formattedString = "My value: {0}".Format(34);
+            var formattedString = "My value: {0}".FormatString(34);
 
             Assert.AreEqual("My value: 34", formattedString);
         }

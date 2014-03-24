@@ -4,7 +4,7 @@ namespace Ext.Core
 {
     public static class StringExtensions
     {
-        public static string Format(this string inputStr, params object[] args)
+        public static string FormatString(this string inputStr, params object[] args)
         {
             return String.Format(inputStr, args);
         }
