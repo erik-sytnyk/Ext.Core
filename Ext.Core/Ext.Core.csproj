@@ -42,6 +42,7 @@
   <ItemGroup>
     <Compile Include="Check.cs" />
     <Compile Include="Collections\DictionaryExtensions.cs" />
+    <Compile Include="Collections\ListExtensions.cs" />
     <Compile Include="Config\ConfigurationReader.cs" />
     <Compile Include="Config\IConfigurationReader.cs" />
     <Compile Include="GlobalConstants.cs" />
