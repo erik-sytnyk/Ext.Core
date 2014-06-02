@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Security.Cryptography.X509Certificates;
 
 namespace Ext.Core.Mapping
 {
@@ -41,6 +42,8 @@ namespace Ext.Core.Mapping
 
     public class MappingHelper
     {
+        public const int MaxMappingLevel = 7;
+
         #region Static members
         
         private static MappingHelper DefaultInstance { get; set; }
@@ -65,8 +68,19 @@ namespace Ext.Core.Mapping
             Converters = new List<IMappingConverter>();
         }
 
+
         public void MapObject(object source, object target)
         {
+            MapObject(source, target, MaxMappingLevel);
+        }
+
+        protected void MapObject(object source, object target, int recursionCounter)
+        {
+            if (recursionCounter < 0)
+            {
+                return;
+            }
+
             Check.NotNull(target, "Target property for mapping should not be null");
 
             if (source == null)
@@ -118,7 +132,7 @@ namespace Ext.Core.Mapping
                             foreach (var sourceItem in sourceList)
                             {
                                 var targetItem = Activator.CreateInstance(targetItemType);
-                                this.MapObject(sourceItem, targetItem);
+                                this.MapObject(sourceItem, targetItem, --recursionCounter);
                                 targetList.Add(targetItem);
                             }
 
@@ -135,7 +149,7 @@ namespace Ext.Core.Mapping
 
                         if (targetPropValue != null)
                         {
-                            this.MapObject(sourcePropValue, targetPropValue);
+                            this.MapObject(sourcePropValue, targetPropValue, --recursionCounter);
                         }
                     }
                     else if (targetPropType == sourcePropType) //simple type

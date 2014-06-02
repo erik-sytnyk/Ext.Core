@@ -74,6 +74,38 @@ namespace Ext.Core.Tests
             public Dictionary<int, string> Dictionary { get; set; }
         }
 
+        public class SourceWithCircularReference
+        {
+            public SourceChildWithCircularReference Child { get; set; }
+            public List<SourceChildWithCircularReference> Children { get; set; }
+
+            public SourceWithCircularReference()
+            {
+                Children = new List<SourceChildWithCircularReference>();
+            }
+        }
+
+        public class SourceChildWithCircularReference
+        {
+            public SourceWithCircularReference Source { get; set; }
+        }
+
+        public class TargetForCircularReference
+        {
+            public TargetChildForCircularReference Child { get; set; }
+            public List<TargetChildForCircularReference> Children { get; set; }
+
+            public TargetForCircularReference()
+            {
+                Children = new List<TargetChildForCircularReference>();
+            }
+        }
+
+        public class TargetChildForCircularReference
+        {
+            public TargetForCircularReference Source { get; set; }
+        }
+
         [TestMethod]
         public void should_map_with_cloning()
         {
@@ -138,6 +170,19 @@ namespace Ext.Core.Tests
             MappingHelper.Map(sourse, target);
 
             Assert.AreSame(sourse.Dictionary[2], target.Dictionary[2]);
+        }
+
+        [TestMethod]
+        public void should_handle_circular_references()
+        {
+            var source = new SourceWithCircularReference();
+            var child = new SourceChildWithCircularReference();
+
+            source.Child = child;
+            child.Source = source;
+            source.Children.Add(child);
+
+            MappingHelper.Map(source, new TargetForCircularReference());
         }
     }
 }
