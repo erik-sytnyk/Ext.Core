@@ -132,7 +132,7 @@ namespace Ext.Core.Mapping
                             foreach (var sourceItem in sourceList)
                             {
                                 var targetItem = Activator.CreateInstance(targetItemType);
-                                this.MapObject(sourceItem, targetItem, --recursionCounter);
+                                this.MapObject(sourceItem, targetItem, recursionCounter - 1);
                                 targetList.Add(targetItem);
                             }
 
@@ -149,7 +149,7 @@ namespace Ext.Core.Mapping
 
                         if (targetPropValue != null)
                         {
-                            this.MapObject(sourcePropValue, targetPropValue, --recursionCounter);
+                            this.MapObject(sourcePropValue, targetPropValue, recursionCounter - 1);
                         }
                     }
                     else if (targetPropType == sourcePropType) //simple type
