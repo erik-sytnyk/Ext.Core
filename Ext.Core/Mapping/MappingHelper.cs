@@ -4,48 +4,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
+using Ext.Core.Reflection;
 
 namespace Ext.Core.Mapping
 {
-    public static class MappingCache
-    {
-        private static readonly IDictionary<Type, IEnumerable<PropertyInfo>> PropertiesCache = new Dictionary<Type, IEnumerable<PropertyInfo>>();
-
-        private static readonly object Lock = new object();
-
-        public static IEnumerable<PropertyInfo> GetProperties(Type type)
-        {
-            if (!PropertiesCache.ContainsKey(type))
-            {
-                lock (Lock)
-                {
-                    if (!PropertiesCache.ContainsKey(type))
-                    {
-                        var props = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);//.Union(type.GetInterfaces().SelectMany(t => t.GetProperties()));
-                        PropertiesCache.Add(type, props);
-                    }
-                }
-            }
-            return PropertiesCache[type];
-        }
-
-        public static IEnumerable<PropertyInfo> GetProperties(object o)
-        {
-            return GetProperties(o.GetType());
-        }
-
-        public static IEnumerable<PropertyInfo> GetWritableProperties(object o)
-        {
-            return GetProperties(o.GetType()).Where(p => p.CanWrite);
-        }
-    }
-
     public class MappingHelper
     {
-        public const int MaxMappingLevel = 7;
-
         #region Static members
-        
+
         private static MappingHelper DefaultInstance { get; set; }
 
         static MappingHelper()
@@ -58,7 +24,12 @@ namespace Ext.Core.Mapping
         {
             DefaultInstance.MapObject(source, target);
         }
-        
+
+        public static void Map(object source, object target, MappingOptions options)
+        {
+            DefaultInstance.MapObject(source, target, options);
+        }
+
         #endregion
 
         public List<IMappingConverter> Converters { get; set; }
@@ -68,10 +39,14 @@ namespace Ext.Core.Mapping
             Converters = new List<IMappingConverter>();
         }
 
-
         public void MapObject(object source, object target)
         {
-            MapObject(source, target, MaxMappingLevel);
+            MapObject(source, target, new MappingOptions());
+        }
+
+        public void MapObject(object source, object target, MappingOptions mappingOptions)
+        {
+            MapObject(source, target, mappingOptions.MappingLevel);
         }
 
         protected void MapObject(object source, object target, int recursionCounter)
@@ -88,80 +63,82 @@ namespace Ext.Core.Mapping
                 return;
             }
 
-            var props = MappingCache.GetProperties(source).ToList();
+            var props = GetPropertiesWithFlattenedNested(source, true);
 
             foreach (var sourceProperty in props)
             {
-                PropertyInfo property = sourceProperty;
-                var targetProperty = MappingCache.GetWritableProperties(target).FirstOrDefault(x => x.Name == property.Name);
+                var property = sourceProperty;
 
-                var sourcePropValue = sourceProperty.GetValue(source);
-                var sourcePropType = sourceProperty.PropertyType;
+                var targetProperty = GetWritableProperties(target).FirstOrDefault(x => x.Name == sourceProperty.FlattenedName);
 
-                Dictionary<string, int> dic = new Dictionary<string, int>();
+                if (targetProperty == null) continue;
 
-                if (targetProperty != null && sourcePropValue != null)
+                var sourcePropValue = sourceProperty.PropertyInfo.GetValue(source);
+
+                if (sourcePropValue == null) continue;
+
+                var sourcePropType = sourceProperty.PropertyInfo.PropertyType;
+
+                var targetPropValue = targetProperty.GetValue(target);
+                var targetPropType = targetProperty.PropertyType;
+
+                var converter =
+                    this.Converters.SingleOrDefault(x => x.SourceType == sourcePropType && x.TargetType == targetPropType);
+
+                if (converter != null)
                 {
-                    var targetPropValue = targetProperty.GetValue(target);
-                    var targetPropType = targetProperty.PropertyType;
-
-                    var converter =
-                        this.Converters.SingleOrDefault(x => x.SourceType == sourcePropType && x.TargetType == targetPropType);
-
-                    if (converter != null)
+                    var convertedResult = converter.Convert(sourcePropValue);
+                    if (convertedResult.IsValid)
                     {
-                        var convertedResult = converter.Convert(sourcePropValue);
-                        if (convertedResult.IsValid)
-                        {
-                            targetProperty.SetValue(target, convertedResult.Value);
-                        }
-                    } 
-                    else if (sourcePropType.Implements<IEnumerable>() && this.IsCollectionT(targetPropType) && targetPropType.Implements<IList>())
-                    {
-                        if (targetPropValue == null && targetPropType.HasParameterlessConstructor())
-                        {
-                            targetPropValue = Activator.CreateInstance(targetPropType);
-                        }
-
-                        var targetItemType = this.GetCollectionTElementType(targetPropType);
-                        if (targetItemType.HasParameterlessConstructor())
-                        {
-                            var sourceList = sourcePropValue as IEnumerable;
-                            var targetList = targetPropValue as IList;
-
-                            foreach (var sourceItem in sourceList)
-                            {
-                                var targetItem = Activator.CreateInstance(targetItemType);
-                                this.MapObject(sourceItem, targetItem, recursionCounter - 1);
-                                targetList.Add(targetItem);
-                            }
-
-                            targetProperty.SetValue(target, targetList);
-                        }
-                    }
-                    else if (this.IsClonableType(targetPropType))
-                    {
-                        if (targetPropValue == null && targetPropType.HasParameterlessConstructor())
-                        {
-                            targetPropValue = Activator.CreateInstance(targetPropType);
-                            targetProperty.SetValue(target, targetPropValue);
-                        }
-
-                        if (targetPropValue != null)
-                        {
-                            this.MapObject(sourcePropValue, targetPropValue, recursionCounter - 1);
-                        }
-                    }
-                    else if (targetPropType == sourcePropType) //simple type
-                    {
-                        targetProperty.SetValue(target, sourcePropValue);
+                        targetProperty.SetValue(target, convertedResult.Value);
                     }
                 }
+                else if (sourcePropType.Implements<IEnumerable>() && this.IsCollectionT(targetPropType) && targetPropType.Implements<IList>())
+                {
+                    if (targetPropValue == null && targetPropType.HasParameterlessConstructor())
+                    {
+                        targetPropValue = Activator.CreateInstance(targetPropType);
+                    }
+
+                    var targetItemType = this.GetCollectionTElementType(targetPropType);
+                    if (targetItemType.HasParameterlessConstructor())
+                    {
+                        var sourceList = sourcePropValue as IEnumerable;
+                        var targetList = targetPropValue as IList;
+
+                        foreach (var sourceItem in sourceList)
+                        {
+                            var targetItem = Activator.CreateInstance(targetItemType);
+                            this.MapObject(sourceItem, targetItem, recursionCounter - 1);
+                            targetList.Add(targetItem);
+                        }
+
+                        targetProperty.SetValue(target, targetList);
+                    }
+                }
+                else if (this.IsClonableType(targetPropType))
+                {
+                    if (targetPropValue == null && targetPropType.HasParameterlessConstructor())
+                    {
+                        targetPropValue = Activator.CreateInstance(targetPropType);
+                        targetProperty.SetValue(target, targetPropValue);
+                    }
+
+                    if (targetPropValue != null)
+                    {
+                        this.MapObject(sourcePropValue, targetPropValue, recursionCounter - 1);
+                    }
+                }
+                else if (targetPropType == sourcePropType) //simple type
+                {
+                    targetProperty.SetValue(target, sourcePropValue);
+                }
+
             }
         }
 
         public void RegisterConverter(IMappingConverter converter)
-        {        
+        {
             this.UnregisterConverter(converter.SourceType, converter.TargetType);
             this.Converters.Add(converter);
         }
@@ -193,6 +170,103 @@ namespace Ext.Core.Mapping
             return type.GetGenericArguments().Single();
         }
 
+        public List<FlattenedPropertyDescription> GetPropertiesWithFlattenedNested(object source, bool loadNested)
+        {
+            var result = new List<FlattenedPropertyDescription>();
+
+            var properties = ReflectionHelper.GetProperties(source.GetType()).ToList();
+
+            foreach (var propertyInfo in properties)
+            {
+                var propertyDesc = new FlattenedPropertyDescription();
+
+                propertyDesc.IsNested = false;
+                propertyDesc.PropertyInfo = propertyInfo;
+                propertyDesc.FlattenedName = propertyInfo.Name;
+
+                result.Add(propertyDesc);
+
+                if (IsClonableType(propertyInfo.PropertyType))
+                {
+                    if (!loadNested) continue;
+
+                    var value = propertyInfo.GetValue(source);
+
+                    if (value != null)
+                    {
+                        LoadNestedFlattenedProperties(value, propertyInfo.Name, result, 4);
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        protected List<FlattenedPropertyDescription> LoadNestedFlattenedProperties(object source, string prefix, List<FlattenedPropertyDescription> list, int recursionLevel)
+        {
+            if (recursionLevel < 0)
+            {
+                return list;
+            }
+
+            var props = ReflectionHelper.GetProperties(source.GetType()).ToList();
+
+            foreach (var propertyInfo in props)
+            {
+                var value = propertyInfo.GetValue(source);
+
+                if (IsClonableType(propertyInfo.PropertyType))
+                {
+                    if (value != null)
+                    {
+                        LoadNestedFlattenedProperties(value, prefix + propertyInfo.Name, list, recursionLevel - 1);
+                    }
+                }
+                else
+                {
+                    var propertyDesc = new FlattenedPropertyDescription();
+
+                    propertyDesc.IsNested = false;
+                    propertyDesc.PropertyInfo = propertyInfo;
+                    propertyDesc.FlattenedName = prefix + propertyInfo.Name;
+
+                    list.Add(propertyDesc);
+                }
+            }
+
+            return list;
+        }
+
+        public static IEnumerable<PropertyInfo> GetWritableProperties(object o)
+        {
+            return ReflectionHelper.GetProperties(o.GetType()).Where(p => p.CanWrite);
+        }
+
         #endregion
+    }
+
+    public class MappingOptions
+    {
+        public const int DefaultMappingLevel = 2;
+
+        public int MappingLevel { get; set; }
+
+        public MappingOptions()
+        {
+            MappingLevel = MappingLevel;
+        }
+
+        public MappingOptions WithMappingLevel(int mappingLevel)
+        {
+            MappingLevel = mappingLevel;
+            return this;
+        }
+    }
+
+    public class FlattenedPropertyDescription
+    {
+        public string FlattenedName { get; set; }
+        public bool IsNested { get; set; }
+        public PropertyInfo PropertyInfo { get; set; }
     }
 }

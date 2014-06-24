@@ -3,12 +3,16 @@ using System.Collections.Generic;
 using System.Linq;
 using Ext.Core.Mapping;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Microsoft.Win32;
+using Omu.ValueInjecter;
 
 namespace Ext.Core.Tests
 {
     [TestClass]
     public class MappingHelperTest
     {
+        #region Nested classes
+
         public class TestSource
         {
             public int Id { get; set; }
@@ -28,6 +32,7 @@ namespace Ext.Core.Tests
             public int Number { get; set; }            
             public string Text { get; set; }
             public DateTime DateTime { get; set; }
+            public decimal Fraction { get; set; }
         }
 
         public class ContainerDestination
@@ -106,6 +111,32 @@ namespace Ext.Core.Tests
             public TargetForCircularReference Source { get; set; }
         }
 
+        public class SourceWithFlattenedProperties
+        {
+            public SourceWithFlattenedPropertiesChild User { get; set; }
+        }
+
+        public class SourceWithFlattenedPropertiesChild
+        {
+            public string FirstName { get; set; }
+            public string LastName { get; set; }
+            public SourceWithFlattenedPropertiesChildChild Address { get; set; }
+        }
+
+        public class SourceWithFlattenedPropertiesChildChild
+        {
+            public string Country { get; set; }
+        }
+
+        public class TargetWithFlattenedProperties
+        {
+            public string UserFirstName { get; set; }
+            public string UserLastName { get; set; }
+            public string UserAddressCountry { get; set; }
+        }
+
+        #endregion
+
         [TestMethod]
         public void should_map_with_cloning()
         {
@@ -122,7 +153,7 @@ namespace Ext.Core.Tests
 
             var destination = new TestDestination();
 
-            MappingHelper.Map(source, destination);
+            MappingHelper.Map(source, destination, new MappingOptions().WithMappingLevel(2));
 
             Assert.AreEqual(destination.Id, source.Id);
             Assert.AreEqual(destination.DataContainer.Number, source.DataContainer.Number);
@@ -182,7 +213,85 @@ namespace Ext.Core.Tests
             child.Source = source;
             source.Children.Add(child);
 
-            MappingHelper.Map(source, new TargetForCircularReference());
+            //MappingHelper.Map(source, new TargetForCircularReference());
+
+            var target = new TargetForCircularReference();
+            target.InjectFrom<FlatLoopValueInjection>(source);
+
+            Assert.IsNotNull(target);
+        }
+
+        [TestMethod]
+        public void should_flatten_object()
+        {
+            var source = new SourceWithFlattenedProperties();
+            source.User = new SourceWithFlattenedPropertiesChild() {FirstName = "Yegor", LastName = "Sytnyk"};
+            source.User.Address = new SourceWithFlattenedPropertiesChildChild(){Country = "Ukraine"};
+            var target = new TargetWithFlattenedProperties();
+
+            target.InjectFrom<FlatLoopValueInjection>(source);
+
+            var mappingHelper = new MappingHelper();
+
+            var test = mappingHelper.GetPropertiesWithFlattenedNested(source, true);
+
+            Assert.IsNotNull(test);
+        }
+
+        [Ignore]
+        [TestMethod]
+        public void performance_test()
+        {
+            int iterations = 1000000;
+
+            var containerSource = new ContainerSource();
+            containerSource.Number = 359;
+            containerSource.DateTime = DateTime.Now;
+            containerSource.Text = "Bla-bla-blah";
+            containerSource.Fraction = 0.56m;
+
+            var containerDestination = new ContainerDestination();
+
+            var start = DateTime.Now;
+
+            for (int i = 0; i < iterations; i++)
+            {
+                MappingHelper.Map(containerSource, containerDestination);
+            }
+
+            var end = DateTime.Now;
+
+            var time = (end - start).TotalSeconds;
+
+            Assert.IsTrue(time < 7);
+        }
+
+        [Ignore]
+        [TestMethod]
+        public void performance_test_compare()
+        {
+            int iterations = 1000000;
+
+            var containerSource = new ContainerSource();
+            containerSource.Number = 359;
+            containerSource.DateTime = DateTime.Now;
+            containerSource.Text = "Bla-bla-blah";
+            containerSource.Fraction = 0.56m;
+
+            var containerDestination = new ContainerDestination();
+
+            var start = DateTime.Now;
+
+            for (int i = 0; i < iterations; i++)
+            {
+                containerDestination.InjectFrom(containerSource);
+            }
+
+            var end = DateTime.Now;
+
+            var time = (end - start).TotalSeconds;
+
+            Assert.IsTrue(time < 6);
         }
     }
 }
