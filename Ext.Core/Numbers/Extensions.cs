@@ -11,10 +11,10 @@ namespace Ext.Core.Numbers
     {
         public static string ToTrimmedNumberString(this decimal number)
         {
-            return TrimFractionalNumber(number.ToString(CultureInfo.InvariantCulture), '.');
+            return TrimFractionalNumberString(number.ToString(CultureInfo.InvariantCulture), '.');
         }
 
-        private static string TrimFractionalNumber(string franctionalNumberStr, char fractionSeparator)
+        public static string TrimFractionalNumberString(string franctionalNumberStr, char fractionSeparator)
         {
             var result = franctionalNumberStr;
 

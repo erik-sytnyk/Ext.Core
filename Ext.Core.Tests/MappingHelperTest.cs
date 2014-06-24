@@ -228,14 +228,10 @@ namespace Ext.Core.Tests
             source.User = new SourceWithFlattenedPropertiesChild() {FirstName = "Yegor", LastName = "Sytnyk"};
             source.User.Address = new SourceWithFlattenedPropertiesChildChild(){Country = "Ukraine"};
             var target = new TargetWithFlattenedProperties();
+            
+            MappingHelper.Map(source, target);
 
-            target.InjectFrom<FlatLoopValueInjection>(source);
-
-            var mappingHelper = new MappingHelper();
-
-            var test = mappingHelper.GetPropertiesWithFlattenedNested(source, true);
-
-            Assert.IsNotNull(test);
+            Assert.AreEqual(target.UserAddressCountry, "Ukraine");
         }
 
         [Ignore]
