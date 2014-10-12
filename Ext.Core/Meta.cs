@@ -47,13 +47,57 @@ namespace Ext.Core
             return String.Join(".", segments);
         }
 
-        private static string FullNameShortVersion<TSource, TProperty>(TSource source, Expression<Func<TSource, TProperty>> expression)
+        private static MemberExpression GetMemberExpression<TSource, TProperty>(Expression<Func<TSource, TProperty>> expr)
         {
-            var result = String.Join(".", expression.ToString().Split('.').Skip(1));
+            var result = (MemberExpression)null;
+
+            switch (expr.Body.NodeType)
+            {
+                case ExpressionType.Convert:
+                case ExpressionType.ConvertChecked:
+                    var ue = expr.Body as UnaryExpression;
+                    result = ((ue != null) ? ue.Operand : null) as MemberExpression;
+                    break;
+                default:
+                    result = expr.Body as MemberExpression;
+                    break;
+            }
+
             return result;
         }
 
-        private static MemberExpression GetMemberExpression<TSource, TProperty>(Expression<Func<TSource, TProperty>> expr)
+        public static string Name<TProperty>(Expression<Func<TProperty>> expression)
+        {
+            var memberExpression = GetMemberExpression(expression);
+            if (memberExpression == null)
+            {
+                throw new ArgumentException(string.Format("Expression '{0}' refers to a method, not a property or variable.", expression.ToString()));
+            }
+
+            return memberExpression.Member.Name;
+        }
+
+        public static string FullName<TProperty>(Expression<Func<TProperty>> expression)
+        {
+            var segments = new List<string>();
+
+            var memberExpression = GetMemberExpression(expression);
+
+            while (memberExpression != null)
+            {
+                string propertyName = memberExpression.Member.Name;
+
+                segments.Add(propertyName);
+
+                memberExpression = memberExpression.Expression as MemberExpression;
+            }
+
+            segments.Reverse();
+
+            return String.Join(".", segments);
+        }
+
+        private static MemberExpression GetMemberExpression<TProperty>(Expression<Func<TProperty>> expr)
         {
             var result = (MemberExpression)null;
 
