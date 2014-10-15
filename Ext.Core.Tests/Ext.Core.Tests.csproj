@@ -53,6 +53,7 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
+    <Compile Include="DictionaryExtensionsTest.cs" />
     <Compile Include="IsTest.cs" />
     <Compile Include="ExtensionsTest.cs" />
     <Compile Include="MappingHelperTest.cs" />
