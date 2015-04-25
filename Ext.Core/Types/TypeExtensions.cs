@@ -5,6 +5,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using Ext.Core.InternalHelpers;
 
 namespace Ext.Core
 {
@@ -42,14 +43,14 @@ namespace Ext.Core
 
         public static bool IsDecoratedWithAttribute<TAttribute>(this MemberInfo method)
         {
-            return method.CustomAttributes.Any(attribute => attribute.AttributeType == typeof(TAttribute));
+            return method.GetCustomAttributesData().Any(attribute => attribute.Constructor.DeclaringType == typeof(TAttribute));
         }
 
         public static bool IsProperty(this MethodInfo method)
         {
             var declaringType = method.DeclaringType;
-            var isSetProperty = declaringType.GetProperties().FirstOrDefault(p => p.SetMethod == method) != null;
-            var isGetProperty = declaringType.GetProperties().FirstOrDefault(p => p.GetMethod == method) != null;
+            var isSetProperty = declaringType.GetProperties().FirstOrDefault(p => p.GetSetMethod() == method) != null;
+            var isGetProperty = declaringType.GetProperties().FirstOrDefault(p => p.GetGetMethod() == method) != null;
             return isGetProperty || isSetProperty;
         }
 

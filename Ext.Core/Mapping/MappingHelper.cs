@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
+using Ext.Core.InternalHelpers;
 using Ext.Core.Reflection;
 
 namespace Ext.Core.Mapping

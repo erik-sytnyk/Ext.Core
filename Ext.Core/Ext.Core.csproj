@@ -9,8 +9,9 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Ext.Core</RootNamespace>
     <AssemblyName>Ext.Core</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -49,6 +50,7 @@
     <Compile Include="ConvertExtensions.cs" />
     <Compile Include="Enums\EnumHelper.cs" />
     <Compile Include="Enums\EnumItemAttribute.cs" />
+    <Compile Include="InternalHelpers\Extensions.cs" />
     <Compile Include="Is.cs" />
     <Compile Include="Mapping\IMappingConverter.cs" />
     <Compile Include="Mapping\MappingHelper.cs" />
