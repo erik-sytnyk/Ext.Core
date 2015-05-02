@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Ext.Core.Mapping
+namespace Ext.Core.Mapping.Converters
 {
     public class StringToIntegerConverter : IMappingConverter
     {
@@ -18,12 +18,12 @@ namespace Ext.Core.Mapping
         {
             var result = new ValidatedResult<object>();
 
-            int intValue;
+            var str = source.ToString();
 
-            if (Int32.TryParse((string)source, out intValue))
+            if (str == "Y" || str == "N")
             {
+                result.Value = str == "Y";
                 result.IsValid = true;
-                result.Value = intValue;
             }
 
             return result;
