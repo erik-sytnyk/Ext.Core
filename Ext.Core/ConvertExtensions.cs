@@ -22,8 +22,6 @@ namespace Ext.Core
         public static double ConvertToDouble(this string str)
         {            
             return Convert.ToDouble(str);
-        }
-
-        
+        }       
     }
 }
